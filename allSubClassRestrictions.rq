@@ -1,0 +1,47 @@
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX testOnt: <http://ont.innotrade.com/testOntology#>
+
+  
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+select distinct ?node ?edge ?filler ?mapping ?restrictionType
+          WHERE {
+          
+          #your class here
+          bind(testOnt:TestClass as ?node ) .
+          
+          ?node  (rdfs:subClassOf|(owl:intersectionOf/rdf:rest*/rdf:first))* ?restriction .
+          filter (isBlank(?restriction))
+          
+          ?restriction  owl:onProperty ?edge . 
+          ?restriction  (owl:onClass|owl:onDataRange|owl:someValuesFrom) ?filler .
+       
+    	    OPTIONAL { ?restriction owl:someValuesFrom ?some } .
+    	    OPTIONAL { ?restriction owl:minQualifiedCardinality ?min } .
+          OPTIONAL { ?restriction owl:qualifiedCardinality ?exactly } .
+          OPTIONAL { ?restriction owl:maxQualifiedCardinality ?max } .  		
+
+          OPTIONAL{
+                ?axiom owl:annotatedSource ?node .
+                ?axiom a owl:Axiom .
+                ?axiom owl:annotatedTarget ?restrictionAnnotation .
+
+                ?restrictionAnnotation  owl:onProperty ?edge . 
+                ?restrictionAnnotation  (owl:onClass|owl:onDataRange|owl:someValuesFrom) ?filler . 	
+        
+        		    OPTIONAL { ?restrictionAnnotation owl:someValuesFrom ?some } .
+                OPTIONAL { ?restrictionAnnotation owl:minQualifiedCardinality ?min } .
+                OPTIONAL { ?restrictionAnnotation owl:qualifiedCardinality ?exactly } .
+                OPTIONAL { ?restrictionAnnotation owl:maxQualifiedCardinality ?max } .  
+                
+                #custom mapping property, not required
+                OPTIONAL { ?axiom <http://ont.innotrade.com/utils#mapping> ?mapping } .
+          } 
+    
+    	  BIND( IF( ?some != "" , concat("some_", str(?some) ), "") as ?restrictionType ) .
+    	  BIND( IF( ?exactly > 0 , concat("exactly_",str(?exactly)), "") as ?restrictionType ) .
+    	  BIND( IF( ?min > 0 , concat("min_",str(?min)), "") as ?restrictionType ) .
+    	  BIND( IF( ?max > 0 , concat("max_",str(?max)), "") as ?restrictionType ) .    
+   
+}order by ?node
